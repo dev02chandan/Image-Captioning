@@ -8,15 +8,18 @@ processor = BlipProcessor.from_pretrained(model_name)
 model = BlipForConditionalGeneration.from_pretrained(model_name)
 
 # Function to generate captions
-def generate_caption(image, object_choice=None):
-    if object_choice and object_choice != "None":
-        caption_prefix = f"The condition of the {object_choice} in the image is"
-        inputs = processor(image, caption_prefix, return_tensors="pt")
-    else:
-        inputs = processor(image, return_tensors="pt")
-    outputs = model.generate(**inputs)
-    caption = processor.decode(outputs[0], skip_special_tokens=True)
-    return caption
+def generate_captions(image, object_choice=None, prefix1="", prefix2="", prefix3=""):
+    captions = []
+    for prefix in [prefix1, prefix2, prefix3]:
+        if prefix and object_choice and object_choice != "None":
+            caption_prefix = f"{prefix} {object_choice} in the image is"
+            inputs = processor(image, caption_prefix, return_tensors="pt")
+        else:
+            inputs = processor(image, return_tensors="pt")
+        outputs = model.generate(**inputs)
+        caption = processor.decode(outputs[0], skip_special_tokens=True)
+        captions.append(caption)
+    return captions
 
 # Streamlit interface
 st.image("logo.png", use_column_width=False)
@@ -39,7 +42,13 @@ if uploaded_file is not None:
     if object_choice == "other":
         object_choice = st.text_input("Type your object:")
 
-    # Button to generate caption
-    if st.button("Generate Caption"):
-        caption = generate_caption(image, object_choice)
-        st.write(caption)
+    # Input fields for three prefix statements
+    prefix1 = st.text_input("Enter the first prefix statement:", "The defect of the")
+    prefix2 = st.text_input("Enter the second prefix statement:", "The condition of the")
+    prefix3 = st.text_input("Enter the third prefix statement:", "Inspecting the")
+
+    # Button to generate captions
+    if st.button("Generate Captions"):
+        captions = generate_captions(image, object_choice, prefix1, prefix2, prefix3)
+        for i, caption in enumerate(captions, 1):
+            st.write(f"Caption {i}: {caption}")
